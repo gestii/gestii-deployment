@@ -1,0 +1,11 @@
+{% extends "message.html" %}
+
+{% block header %}
+	<h2>New repo <i>{{ repo }}</i> ready for deployment</h2>
+{% endblock %}
+
+{% block body %}
+	<h3>{{ sen }}</h3>
+
+	<h4>Created at: {{ created_at }}</h4>
+{% endblock %}

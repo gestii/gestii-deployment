@@ -1,0 +1,22 @@
+{% extends "message.html" %}
+
+{% block header %}
+	<h2>New deploy for <i>{{ repo }}</i> repository, <i>{{ target }}</i> target</h2>
+{% endblock %}
+
+{% block body %}
+	<h3>started on {{ started }}</h3>
+	<h3>finished on {{ finished }}</h3>
+
+	<h3>Head: {{ head }}</h3>
+
+	<h3>Commits:</h3>
+
+	<ul>
+		{% for commit in commits %}
+			<li>
+				<a href="{{ commit.url }}"><strong>{{ commit.message }}</strong></a> (<a href="mailto: {{ commit.author.email }}">{{ commit.author.name }}</a>)
+			</li>
+		{% endfor %}
+	</ul>
+{% endblock %}

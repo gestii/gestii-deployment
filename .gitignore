@@ -1,0 +1,8 @@
+*.py[oc]
+update.lock
+*.sublime-workspace
+*.log
+*.pid
+/deploy.json
+/deploy.txt
+/conf/settings_*.py

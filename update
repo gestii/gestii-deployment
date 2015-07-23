@@ -1,0 +1,5 @@
+#!/bin/bash
+git pull
+pip install -r requirements.txt
+date > update.lock
+curl -X POST http://localhost:4567/message -d data=data

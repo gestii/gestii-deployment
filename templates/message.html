@@ -1,0 +1,25 @@
+<html>
+	<head>
+		<style type="text/css">
+			#header {
+				color: #4B6E9D;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="header">
+			{% block header %}
+				<h1>The header here</h1>
+			{% endblock %}
+		</div>
+		<div id="body">
+			{% block body %}
+				<h3>The body here</h3>
+			{% endblock %}
+		</div>
+		<div id="footer">
+			{% block footer %}
+			{% endblock %}
+		</div>
+	</body>
+</html>
