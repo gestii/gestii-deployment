@@ -15,7 +15,6 @@ from cherrypy.process.plugins import Daemonizer
 
 system            = platform.system()
 deployment_dir    = os.getcwd()
-update_run_script = './update' if system != 'Windows' else 'update.bat'
 json_deployfile   = os.path.join(deployment_dir, 'deploy.json')
 
 notify_adapter = __import__('lib.notify.'+settings.NOTIFY_ADAPTER).notify.__getattribute__(settings.NOTIFY_ADAPTER)
@@ -80,10 +79,11 @@ class App(object):
                         }, open(json_deployfile, 'w'))
                         # now we change the working dir in order to find the
                         # update scripts
-                        update_script = os.path.join(repo_dir, update_run_script)
+                        update_script = './update' if system != 'Windows' else 'update.bat'
+                        update_script_path = os.path.join(repo_dir, update_script)
 
-                        if not os.path.isfile(update_script):
-                            cherrypy.log('"%s" script not found'%update_script, context='ERROR')
+                        if not os.path.isfile(update_script_path):
+                            cherrypy.log('"%s" script not found'%update_script_path, context='ERROR')
 
                             # Raise error
                             cherrypy.response.status = 501
@@ -93,7 +93,10 @@ class App(object):
 
                         cherrypy.log('deploying repo ' + repo_dir, context='GIT')
 
-                        process = subprocess.Popen([update_run_script])
+                        if system != 'Windows':
+                            process = subprocess.Popen([update_script])
+                        else:
+                            process = subprocess.Popen(['cmd', '/c', update_script])
 
                         os.chdir(deployment_dir)
 
