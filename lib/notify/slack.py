@@ -1,5 +1,4 @@
 import requests
-import cherrypy
 import json
 from datetime import datetime
 from lib.settings_loader import settings

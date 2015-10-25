@@ -7,13 +7,15 @@ import os
 import re
 import subprocess
 import platform
+from multiprocessing import Process
 from datetime import datetime
 from jinja2 import Environment, FileSystemLoader
 from lib.settings_loader import settings
 from cherrypy.process.plugins import PIDFile
 from cherrypy.process.plugins import Daemonizer
+from time import sleep
 
-system            = platform.system()
+is_windows        = platform.system() == 'Windows'
 deployment_dir    = os.getcwd()
 json_deployfile   = os.path.join(deployment_dir, 'deploy.json')
 
@@ -25,114 +27,105 @@ cherrypy.config.update({
     'server.thread_pool' : settings.THREAD_POOL,
 })
 
+def deploy_repo(repo_dir, deploy_data, update_script):
+    cherrypy.log('deploying repo ' + repo_dir, context='GIT')
+
+    os.chdir(repo_dir)
+
+    if 'update' not in update_script:
+        return
+
+    for command in update_script['update']:
+        process = subprocess.call(command.split(' '), shell=is_windows)
+
+    deploy_data.update({
+        'finished': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    })
+
+    notify_adapter.deploy_finished(deploy_data)
+
+    cherrypy.log('finished deploy ' + repo_dir, context='GIT')
+
 class App(object):
     @cherrypy.expose
     @cherrypy.tools.json_out()
     def index(self, **kwargs):
-        if cherrypy.request.method == 'GET':
+        if cherrypy.request.method != 'POST':
             return {'msg': 'nothing to do here'}
-        elif cherrypy.request.method == 'POST':
-            payload = cherrypy.request.body.read()
-            headers = cherrypy.request.headers
 
-            if 'X-Hub-Signature' in headers:
-                signature       = hmac.new(settings.GITHUB_TOKEN, payload, hashlib.sha1).hexdigest()
-                given_signature = headers['X-Hub-Signature']
+        headers = cherrypy.request.headers
 
-                if not re.match('sha1=[a-f0-9]{40}$', given_signature):
-                    return {'msg': 'Bad signature format'}
+        if 'X-Hub-Signature' not in headers:
+            cherrypy.response.status = 400
+            return {'msg': 'header X-Hub-Signature required'}
 
-                if hmac.compare_digest(signature, given_signature.split('=')[1]):
+        payload         = cherrypy.request.body.read()
+        signature       = hmac.new(settings.GITHUB_TOKEN, payload, hashlib.sha1).hexdigest()
+        given_signature = headers['X-Hub-Signature']
 
-                    payload_object = json.loads(payload)
+        if not re.match('sha1=[a-f0-9]{40}$', given_signature):
+            return {'msg': 'Bad signature format'}
 
-                    # Message for new repos added
-                    if not 'ref' in payload_object:
-                        notify_adapter.repo_added()
+        if not hmac.compare_digest(signature, given_signature.split('=')[1]):
+            cherrypy.response.status = 401
+            return {'msg': 'invalid signature'}
 
-                        return {'msg': 'hello, github'}
+        payload_object = json.loads(payload)
 
-                    ref = re.match('^refs/(heads|tags)/(.*)$', payload_object['ref']).group(2)
+        # Message for new repos added
+        if not 'ref' in payload_object:
+            notify_adapter.repo_added()
 
-                    # Distinguish main branches and targets
-                    if ref == 'develop':
-                        repos_dir = os.path.join(settings.BASE_PATH, settings.NAMESPACE+'_develop')
-                    elif ref == 'master':
-                        repos_dir = os.path.join(settings.BASE_PATH, settings.NAMESPACE)
-                    else:
-                        return {'msg': 'Push to undefined target "%s"'%ref}
+            return {'msg': 'hello, github'}
 
-                    commits    = payload_object['commits']
-                    head       = payload_object['after']
-                    repo_name  = payload_object['repository']['name']
-                    repo_dir   = os.path.join(repos_dir, repo_name)
+        ref = re.match('^refs/(heads|tags)/(.*)$', payload_object['ref']).group(2)
 
-                    if os.path.exists(repo_dir):
-                        # dump to file some data
-                        json.dump({
-                            'head'    : head,
-                            'repo'    : repo_name,
-                            'started' : datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                            'commits' : commits,
-                            'type'    : 'git',
-                            'target'  : ref,
-                        }, open(json_deployfile, 'w'))
-                        # now we change the working dir in order to find the
-                        # update scripts
-                        update_script = './update' if system != 'Windows' else 'update.bat'
-                        update_script_path = os.path.join(repo_dir, update_script)
+        # Distinguish main branches and targets
+        if ref == 'develop':
+            repos_dir = os.path.join(settings.BASE_PATH, settings.NAMESPACE+'_develop')
+        elif ref == 'master':
+            repos_dir = os.path.join(settings.BASE_PATH, settings.NAMESPACE)
+        else:
+            return {'msg': 'Push to undefined target "%s"'%ref}
 
-                        if not os.path.isfile(update_script_path):
-                            cherrypy.log('"%s" script not found'%update_script_path, context='ERROR')
+        commits    = payload_object['commits']
+        head       = payload_object['after']
+        repo_name  = payload_object['repository']['name']
+        repo_dir   = os.path.join(repos_dir, repo_name)
 
-                            # Raise error
-                            cherrypy.response.status = 501
-                            return {'msg': 'Update script for this repo does not exist'}
+        if not os.path.exists(repo_dir):
+            cherrypy.response.status = 400
+            return {'msg': 'repo with name %s and target %s doesn\'t exists' % (repo_name, ref)}
 
-                        os.chdir(repo_dir)
+        deployfile = os.path.join(repo_dir, '.deployfile')
 
-                        cherrypy.log('deploying repo ' + repo_dir, context='GIT')
+        if not os.path.isfile(deployfile):
+            cherrypy.log('"%s" script not found'%deployfile, context='ERROR')
 
-                        if system != 'Windows':
-                            process = subprocess.Popen([update_script])
-                        else:
-                            process = subprocess.Popen(['cmd', '/c', update_script])
+            # Raise error
+            cherrypy.response.status = 501
+            return {'msg': 'Update script for this repo does not exist'}
 
-                        os.chdir(deployment_dir)
+        with open(deployfile, 'r') as deploy_script:
+            try:
+                update_script = json.load(deploy_script)
+            except ValueError:
+                cherrypy.response.status = 501
+                return {'msg': 'Malformed deployfile'}
 
-                        return {'msg': 'deploy process started, wait for confirm email'}
-                    else:
-                        cherrypy.response.status = 400
-                        return {'msg': 'repo with name %s and target %s doesn\'t exists' % (repo_name, ref)}
-                else:
-                    cherrypy.response.status = 401
-                    return {'msg': 'invalid signature'}
-            else:
-                cherrypy.response.status = 400
-                return {'msg': 'header X-Hub-Signature required'}
+        deploy_data = {
+            'head'    : head,
+            'repo'    : repo_name,
+            'started' : datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'commits' : commits,
+            'type'    : 'git',
+            'target'  : ref,
+        }
 
-    @cherrypy.expose
-    @cherrypy.tools.json_out()
-    def message(self, **kwargs):
-        if cherrypy.request.method == 'GET':
-            return {'msg': 'nothing to do here, use another verb'}
-        elif cherrypy.request.method == 'POST':
-            if os.path.isfile(json_deployfile):
-                deploy_data = json.load(open(json_deployfile, 'r'))
-                deploy_data.update({
-                    'finished': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                })
+        process = Process(target=deploy_repo, args=(repo_dir, deploy_data, update_script))
+        process.start()
 
-                notify_adapter.deploy_finished(deploy_data)
-
-                try:
-                    os.remove(json_deployfile)
-                except OSError:
-                    cherrypy.log('Attempting to remove unexistent deployfile', context='WARN')
-
-                return {'msg': 'deploy message sent!'}
-            else:
-                return {'msg': 'missing file'}
+        return {'msg': 'deploy process started, wait for confirmation'}
 
 if __name__ == '__main__':
     conf = {
@@ -143,13 +136,13 @@ if __name__ == '__main__':
     }
     app = App()
 
-    if system != 'Windows':
+    if not is_windows:
         PIDFile(cherrypy.engine, os.path.join(deployment_dir, 'deployment.pid')).subscribe()
         Daemonizer(cherrypy.engine,
             stdout=os.path.join(deployment_dir, 'access.log'),
             stderr=os.path.join(deployment_dir, 'error.log')
         ).subscribe()
     else:
-        print "Windows does not support fork(), running server in current cmd"
+        print("Windows does not support fork(), running server in current cmd")
 
     cherrypy.quickstart(app, '/', conf)
