@@ -123,6 +123,7 @@ class App(object):
 
         process = Process(target=deploy_repo, args=(repo_dir, deploy_data, update_script))
         process.start()
+        process.join(60)
 
         return {'msg': 'deploy process started, wait for confirmation'}
 
