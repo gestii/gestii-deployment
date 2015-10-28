@@ -12,10 +12,11 @@ def deploy_finished(deploy_data):
     r = requests.post(settings.MAILGUN_URL, auth=('api', settings.MAILGUN_KEY), params={
         'from'    : from_text,
         'to'      : ','.join(settings.ADMINS),
-        'subject' : '[%s/%s:%s] Finished deploy'%(
+        'subject' : '[%s][%s/%s:%s] Finished deploy'%(
+            settings.NAME,
             settings.NAMESPACE,
             deploy_data['repo'],
-            deploy_data['target']
+            deploy_data['target'],
         ),
         'html'    : template.render(deploy_data),
     })
@@ -35,6 +36,6 @@ def repo_added():
     r = requests.post(settings.MAILGUN_URL, auth=('api', settings.MAILGUN_KEY), params={
         'from'    : from_text,
         'to'      : ','.join(settings.ADMINS),
-        'subject' : '[%s] Repo added'%(settings.NAMESPACE),
+        'subject' : '[%s][%s] Repo added'%(settings.NAME, settings.NAMESPACE),
         'html'    : template.render(context),
     })

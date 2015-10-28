@@ -19,7 +19,8 @@ def parse_commits(commit):
     }
 
 def deploy_finished(deploy_data):
-    text = 'Se ha publicado %s, rama %s (%s)'%(
+    text = '[%s] Se ha publicado %s, rama %s (%s)'%(
+        settings.NAME,
         deploy_data['repo'],
         deploy_data['target'],
         time_delta(
