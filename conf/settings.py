@@ -3,6 +3,9 @@
 # Host for the server
 HOST = '127.0.0.1'
 
+# Name for this server
+NAME = 'remote'
+
 # Port for the server
 PORT = 4567
 
