@@ -94,24 +94,23 @@ class App(object):
         repo_dir   = os.path.join(repos_dir, repo_name)
 
         if not os.path.exists(repo_dir):
-            cherrypy.response.status = 400
             return {'msg': 'repo with name %s and target %s doesn\'t exists' % (repo_name, ref)}
 
         deployfile = os.path.join(repo_dir, '.deployfile')
 
         if not os.path.isfile(deployfile):
-            cherrypy.log('"%s" script not found'%deployfile, context='ERROR')
+            cherrypy.log('"%s" not found'%deployfile, context='ERROR')
 
             # Raise error
             cherrypy.response.status = 501
-            return {'msg': 'Update script for this repo does not exist'}
+            return {'msg': 'missing .deployfile'}
 
         with open(deployfile, 'r') as deploy_script:
             try:
                 update_script = json.load(deploy_script)
             except ValueError:
                 cherrypy.response.status = 501
-                return {'msg': 'Malformed deployfile'}
+                return {'msg': 'malformed .deployfile'}
 
         deploy_data = {
             'head'    : head,
@@ -124,6 +123,7 @@ class App(object):
 
         process = Process(target=deploy_repo, args=(repo_dir, deploy_data, update_script))
         process.start()
+        process.join(60)
 
         return {'msg': 'deploy process started, wait for confirmation'}
 
