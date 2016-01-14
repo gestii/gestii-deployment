@@ -64,6 +64,7 @@ class App(object):
         given_signature = headers['X-Hub-Signature']
 
         if not re.match('sha1=[a-f0-9]{40}$', given_signature):
+            cherrypy.response.status = 400
             return {'msg': 'Bad signature format'}
 
         if not hmac.compare_digest(signature, given_signature.split('=')[1]):
