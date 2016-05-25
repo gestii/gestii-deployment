@@ -15,20 +15,18 @@ if __name__ == '__main__':
 
     parser.add_argument('host', help='The host')
     parser.add_argument('repo', help='The repository to deploy')
+    parser.add_argument('--branch', help='The branch to deploy', default='develop')
 
     args = parser.parse_args()
 
     payload = json.dumps({
-        "ref": "refs/heads/develop",
+        "ref": "refs/heads/"+args.branch,
         "after": "DUMMY",
         "commits": [],
         "repository": {
             "name": args.repo
         }
     })
-
-    print(payload)
-    print(settings.GITHUB_TOKEN)
 
     r = requests.post('http://'+args.host+':4567', headers={
         'X-Hub-Signature': 'sha1='+sign(payload)
