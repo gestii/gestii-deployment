@@ -27,15 +27,16 @@ cherrypy.config.update({
     'server.thread_pool' : settings.THREAD_POOL,
 })
 
-def deploy_repo(repo_dir, deploy_data, update_script):
+def deploy_repo(repo_dir, deploy_data, update_script, task='update'):
     cherrypy.log('deploying repo ' + repo_dir, context='GIT')
 
     os.chdir(repo_dir)
 
-    if 'update' not in update_script:
+    if task not in update_script:
+        cherrypy.log('Missing task %s'%task, context='GIT')
         return
 
-    for command in update_script['update']:
+    for command in update_script[task]:
         process = subprocess.call(command.split(' '), shell=is_windows)
 
     deploy_data.update({
