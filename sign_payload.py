@@ -19,6 +19,6 @@ if __name__ == '__main__':
         exit()
 
     with open(sys.argv[1], 'r') as payload_file:
-        payload = payload_file.read()
+        payload = payload_file.read().strip()
 
     print(sign(payload))
