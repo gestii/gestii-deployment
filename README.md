@@ -25,6 +25,6 @@ En general esto lo hace github, pero pa'cuando uno se siente con ganas:
 
 * Crea un archivo con el payload a mandar, digamos `payload.json`
 * fírmalo: `$ ./sign_payload.py payload.json` recuerda que en las configuraciones el valor de `GITHUB_TOKEN` sea el mismo entre el que firma y quien va a recibir la petición
-* haz la petición: `$ curl -X POST -d@payload.json -H "X-Hub-Signature: sha1=<firma>" -H "Content-Type: application/json" <url>`
+* haz la petición: `$ curl -X POST --data-binary @payload.json -H "X-Hub-Signature: sha1=<firma>" -H "Content-Type: application/json" <url>`
 
 Si todo sale bien ya deberías haber logrado una petición
