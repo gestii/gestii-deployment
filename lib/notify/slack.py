@@ -1,3 +1,4 @@
+# encoding: utf8
 import requests
 import json
 from datetime import datetime
@@ -41,4 +42,38 @@ def deploy_finished(deploy_data):
     r = requests.post(settings.SLACK_HOOK, data=json.dumps(payload))
 
 def repo_added():
-    pass
+    text = '[%s] Se ha añadido el repositosio %s'%(
+        settings.NAME,
+        deploy_data['repo'],
+    )
+    payload = {
+        'attachments' : [
+            {
+                "fallback" : text,
+                "pretext"  : text,
+                "color"    : "good",
+            }
+        ],
+    }
+    r = requests.post(settings.SLACK_HOOK, data=json.dumps(payload))
+
+def rollback_finished(rollback_data):
+    text = '[%s] Se ha hecho rollback de %s, tag %s (%s)'%(
+        settings.NAME,
+        rollback_data['repo'],
+        rollback_data['tag'],
+        time_delta(
+            datetime.strptime(rollback_data['finished'], '%Y-%m-%d %H:%M:%S') - \
+            datetime.strptime(rollback_data['started'], '%Y-%m-%d %H:%M:%S')
+        )
+    )
+    payload = {
+        'attachments' : [
+            {
+                "fallback" : text,
+                "pretext"  : text,
+                "color"    : "bad",
+            }
+        ],
+    }
+    r = requests.post(settings.SLACK_HOOK, data=json.dumps(payload))
