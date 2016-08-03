@@ -29,4 +29,8 @@ if __name__ == '__main__':
 
     update_script = json.load(open(os.path.join(args.path, '.deployfile')))
 
-    deploy_repo(args.path, {}, update_script, args.task)
+    if args.task not in update_script:
+        print("Missign task '{}'".format(args.task))
+        exit()
+
+    deploy_repo(args.path, {}, update_script[args.task])
