@@ -72,7 +72,11 @@ class App(object):
 
             return {'msg': 'hello, github'}
 
-        ref = re.match('^refs/(heads|tags)/(.*)$', payload_object['ref']).group(2)
+        match = re.match('^refs/(heads|tags)/(.*)$', payload_object['ref'])
+        if not match:
+            return {'msg': 'malformed ref'}
+
+        ref = match.group(2)
 
         # Distinguish main branches and targets
         if ref == 'develop':
