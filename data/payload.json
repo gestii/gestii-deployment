@@ -2,7 +2,7 @@
   "ref": "refs/heads/master",
   "after": "b1455c76673515ab2c9dfced5583a00c4c69f948",
   "repository": {
-    "name": "website"
+    "name": "api"
   },
   "commits": [
     {
@@ -27,6 +27,5 @@
         "composer.json"
       ]
     }
-  ],
-  "ref": "refs/heads/master"
+  ]
 }
