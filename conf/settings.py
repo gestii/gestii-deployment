@@ -15,9 +15,6 @@ THREAD_POOL = 2
 # Directory where repos are located
 BASE_PATH = '/'
 
-# The namespace (group repos)
-NAMESPACE = ''
-
 # GitHub Key (64 random chars)
 GITHUB_TOKEN = ''
 
@@ -44,3 +41,12 @@ FROM_MAIL = 'deploy@example.com'
 
 # Header for sent emails (if mailgun or email adapter)
 FROM_NAME = 'Deploy service'
+
+# Configured repositories to work with
+# also allow configuration in a per-branch basis
+REPOS = {
+    'remote_name': {
+        'master': '/path/to/master',
+        'develop': '/path/to/develop',
+    },
+}
