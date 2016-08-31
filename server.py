@@ -78,21 +78,21 @@ class App(object):
 
         ref = match.group(2)
 
-        # Distinguish main branches and targets
-        if ref == 'develop':
-            repos_dir = os.path.join(settings.BASE_PATH, settings.NAMESPACE+'_develop')
-        elif ref == 'master':
-            repos_dir = os.path.join(settings.BASE_PATH, settings.NAMESPACE)
-        else:
-            return {'msg': 'Push to undefined target "%s"'%ref}
-
         commits    = payload_object['commits']
         head       = payload_object['after']
         repo_name  = payload_object['repository']['name']
-        repo_dir   = os.path.join(repos_dir, repo_name)
+
+        # Check if repo is configured
+        if not repo_name in settings.REPOS:
+            return {'msg': 'repo with name {} is not configured'.format(repo_name)}
+
+        if not ref in settings.REPOS[repo_name]:
+            return {'msg': 'repo with name {} and branch {} is not configured'.format(repo_name, ref)}
+
+        repo_dir   = settings.REPOS[repo_name][ref]
 
         if not os.path.exists(repo_dir):
-            return {'msg': 'repo with name %s and target %s doesn\'t exists' % (repo_name, ref)}
+            return {'msg': 'directory {} for repo {} and branch {} doesn\'t exist'.format(repo_dir, repo_name, ref)}
 
         deployfile = os.path.join(repo_dir, '.deployfile')
 
@@ -138,19 +138,19 @@ class App(object):
             return {'msg': 'Missing required ref field'}
         ref = payload_object['ref']
 
-        # Distinguish main branches and targets
-        if ref == 'develop':
-            repos_dir = os.path.join(settings.BASE_PATH, settings.NAMESPACE+'_develop')
-        elif ref == 'master':
-            repos_dir = os.path.join(settings.BASE_PATH, settings.NAMESPACE)
-        else:
-            return {'msg': 'Push to undefined target "%s"'%ref}
-
         repo_name = payload_object['repo']
-        repo_dir  = os.path.join(repos_dir, repo_name)
+
+        # Check if repo is configured
+        if not repo_name in settings.REPOS:
+            return {'msg': 'repo with name {} is not configured'.format(repo_name)}
+
+        if not ref in settings.REPOS[repo_name]:
+            return {'msg': 'repo with name {} and branch {} is not configured'.format(repo_name, ref)}
+
+        repo_dir   = settings.REPOS[repo_name][ref]
 
         if not os.path.exists(repo_dir):
-            return {'msg': 'repo with name %s and target %s doesn\'t exists' % (repo_name, ref)}
+            return {'msg': 'directory {} for repo {} and branch {} doesn\'t exist'.format(repo_dir, repo_name, ref)}
 
         deployfile = os.path.join(repo_dir, '.deployfile')
 
