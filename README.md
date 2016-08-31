@@ -12,7 +12,7 @@ Gestiona el proceso de deploy en múltiples repositorios, incluyendose a si mism
 
 ### Poner a funcionar
 
-* Clonar el repositorio dentro de alguna carpeta (namespace) donde están el resto de los repositorios a deployear, por ejemplo `/repos`
+* Clonar el repositorio dentro de alguna carpeta
 * `pip install -r requirements.txt`
 * Configurar al gusto en `conf/settings_development.py` ó `conf/settings_production`
 * `python server.py`
