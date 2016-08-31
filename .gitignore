@@ -6,3 +6,4 @@ update.lock
 /deploy.json
 /deploy.txt
 /conf/settings_*.py
+logs/
