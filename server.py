@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 import cherrypy
 import hashlib
@@ -124,7 +125,6 @@ class App(object):
 
         process = Process(target=deploy_repo, args=(repo_dir, deploy_data, script))
         process.start()
-        process.join(120)
 
         return {'msg': 'deploy process started, wait for confirmation'}
 
@@ -172,7 +172,6 @@ class App(object):
 
         process = Process(target=rollback_repo, args=(repo_dir, rollback_data, script))
         process.start()
-        process.join(120)
 
         return {'msg': 'rollback process started, wait for confirmation'}
 
