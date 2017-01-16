@@ -12,9 +12,6 @@ PORT = 4567
 # Number of child threads
 THREAD_POOL = 2
 
-# Directory where repos are located
-BASE_PATH = '/'
-
 # GitHub Key (64 random chars)
 GITHUB_TOKEN = ''
 
